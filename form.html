@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>写真と現在地を送信</title>
+</head>
+<body>
+  <h2>写真と現在地を送信</h2>
+  <input type="file" id="imageInput" accept="image/*"><br><br>
+  <textarea id="descriptionInput" placeholder="説明文を入力してください" rows="4" cols="40"></textarea><br><br>
+  <button onclick="sendData()">送信する</button>
+  <p id="status"></p>
+
+  <script>
+    async function sendData() {
+      const status = document.getElementById("status");
+      status.textContent = "位置情報を取得中...";
+
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        const fileInput = document.getElementById("imageInput");
+        const description = document.getElementById("descriptionInput").value;
+        const file = fileInput.files[0];
+
+        if (!file) {
+          alert("画像を選択してください");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async function() {
+          const base64 = reader.result.split(',')[1];
+          const payload = {
+            latitude: latitude,
+            longitude: longitude,
+            description: description,
+            imageData: {
+              name: file.name,
+              mimeType: file.type,
+              base64: base64
+            }
+          };
+
+          const response = await fetch("https://script.google.com/macros/s/AKfycbxdqt6x4--hrFh_jEw8l2s5rSLizrC_rBEpFlIr_5toMv1JoC0kS9uvzP7VYBwmD1hQ/exec", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
+
+          status.textContent = response.ok ? "送信しました！" : "送信に失敗しました";
+        };
+        reader.readAsDataURL(file);
+      }, (error) => {
+        status.textContent = "位置情報が取得できませんでした：" + error.message;
+      });
+    }
+  </script>
+</body>
+</html>
